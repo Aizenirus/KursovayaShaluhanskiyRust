@@ -326,6 +326,8 @@ pub struct Hint {
     pub key: String,
     pub count: usize,
     pub text: String,
+    /// Цена самого дешёвого телефона, который проходит все условия, кроме бюджета (для кнопки «поднять бюджет»).
+    pub cheapest: Option<i64>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -488,24 +490,30 @@ fn weak_result_hint(m: &Model, a: &Survey, s: &Scored) -> Option<Hint> {
         }
     }
     let best = cut.iter().enumerate().fold(0, |b, (j, &c)| if c > cut[b] { j } else { b });
+    // самый дешёвый телефон, который проходит все требования, кроме бюджета и «цены от»
+    let cheapest_ok = (0..m.n)
+        .filter(|&i| s.pen[i][1..].iter().all(|v| *v == 0.0))
+        .map(|i| m.phones[i].price_rub)
+        .fold(f64::INFINITY, f64::min);
+    let cheapest = cheapest_ok.is_finite().then(|| cheapest_ok.round() as i64);
     if cut[best] == 0 {
         let any = feasible_with(m, a, &s.pen, 99.0);
-        let cheapest = (0..m.n).filter(|&i| any[i]).map(|i| m.phones[i].price_rub).fold(f64::INFINITY, f64::min);
-        let text = if cheapest.is_finite() {
-            format!("Подходящих телефонов всего {count}: мал бюджет. Самый дешёвый подходящий — {} ₽.", rub(cheapest))
+        let cheap_any = (0..m.n).filter(|&i| any[i]).map(|i| m.phones[i].price_rub).fold(f64::INFINITY, f64::min);
+        let text = if cheap_any.is_finite() {
+            format!("Подходящих телефонов всего {count}: мал бюджет. Самый дешёвый подходящий — {} ₽.", rub(cheap_any))
         } else {
             "Под эти требования телефонов нет.".into()
         };
-        return Some(Hint { key: "budget".into(), count, text });
+        return Some(Hint { key: "budget".into(), count, text, cheapest });
     }
-    Some(Hint {
-        key: REQ_KEYS[best].into(),
-        count,
-        text: format!(
-            "Подходящих телефонов всего {count}. Больше всего моделей в бюджете отсекло требование «{}» ({} шт.).",
-            REQ_TITLES[best], cut[best]
-        ),
-    })
+    let mut text = format!(
+        "Подходящих телефонов всего {count}. Больше всего моделей в бюджете отсекло требование «{}» ({} шт.).",
+        REQ_TITLES[best], cut[best]
+    );
+    if let Some(c) = cheapest.filter(|&c| c as f64 > a.budget_rub * 1.1) {
+        text += &format!(" Самый дешёвый телефон, который проходит все остальные условия, стоит {} ₽.", rub(c as f64));
+    }
+    Some(Hint { key: REQ_KEYS[best].into(), count, text, cheapest })
 }
 
 fn result_blocks(m: &Model, a: &Survey, s: &Scored, picked: &[usize]) -> Vec<Block> {
@@ -602,4 +610,17 @@ pub fn recommend_by_segments(m: &Model, a: &Survey, top_n: usize, diverse: bool)
             }
         })
         .collect()
+}
+
+/// Для сайта: в выдаче только телефоны, которые проходят условия анкеты.
+/// Python-версия, если подходящих нет, добивает выдачу ближайшими неподходящими (с пометкой «не подходит»),
+/// из-за чего при iOS в дешёвом сегменте показывались Android-телефоны дороже бюджета. Здесь вместо этого —
+/// пустая выдача и подсказка, какое условие ослабить.
+pub fn drop_unfit(r: &mut Recommendation) {
+    if r.feasible == 0 {
+        r.table.clear();
+        r.blocks.clear();
+    } else {
+        r.table.retain(|row| row.ok);
+    }
 }

@@ -49,6 +49,9 @@ struct RecommendRequest {
     top_n: usize,
     #[serde(default = "yes")]
     diverse: bool,
+    /// разбить выдачу на ценовые категории (Бюджетные / Средний бюджет / Флагманы)
+    #[serde(default)]
+    split: bool,
 }
 fn default_top() -> usize {
     10
@@ -70,8 +73,12 @@ async fn recommend(State(m): State<Arc<Model>>, Json(req): Json<RecommendRequest
     let t0 = Instant::now();
     let a = req.survey.sanitize();
     let top_n = req.top_n.clamp(1, 50);
-    let result = engine::recommend(&m, &a, top_n, req.diverse, true);
-    let segments = engine::recommend_by_segments(&m, &a, top_n, req.diverse);
+    let mut result = engine::recommend(&m, &a, top_n, req.diverse, false);
+    engine::drop_unfit(&mut result);
+    let mut segments = if req.split { engine::recommend_by_segments(&m, &a, top_n, req.diverse) } else { Vec::new() };
+    for seg in &mut segments {
+        engine::drop_unfit(&mut seg.result);
+    }
     let compute_us = t0.elapsed().as_secs_f64() * 1e6;
     Json(RecommendResponse { result, segments, total: m.n, compute_us })
 }
