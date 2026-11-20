@@ -4,9 +4,12 @@
 //!   GET  /api/meta        — справочник для интерфейса: ползунки, пресеты, метрики модели
 //!   POST /api/recommend   — подбор по анкете (JSON) → выдача, блоки, сегменты, время расчёта
 //!   GET  /api/bench?n=…   — замер скорости на n случайных анкетах
+//!   GET  /api/photos      — фото телефонов: Wikimedia Commons (photos.json) + своя папка photos/
+//!   GET  /photos/…        — файлы из папки photos/ (например photos/57.jpg, photos/57-2.webp)
 //!   GET  /fonts/…         — шрифты страницы (встроены в бинарник)
 //!
-//! Переменные окружения: PORT (по умолчанию 8080), MODEL_PATH (иначе — встроенный model.json).
+//! Переменные окружения: PORT (по умолчанию 8080), MODEL_PATH (иначе — встроенный model.json),
+//! PHOTOS_DIR (по умолчанию папка photos рядом с местом запуска).
 
 use axum::{
     extract::{Path, Query, State},
@@ -22,6 +25,7 @@ use tower_http::{compression::CompressionLayer, cors::CorsLayer};
 
 const INDEX_HTML: &str = include_str!("../static/index.html");
 const EMBEDDED_MODEL: &str = include_str!("../model.json");
+const COMMONS_PHOTOS: &str = include_str!("../photos.json");
 
 /// Шрифты Unbounded и Onest (SIL OFL) встроены в бинарник: страница выглядит одинаково и без интернета.
 macro_rules! fonts {
@@ -90,6 +94,8 @@ async fn meta(State(m): State<Arc<Model>>) -> impl IntoResponse {
         "metrics": m.metrics, "ui": m.ui, "trained_at": m.trained_at,
         "price_min": pmin, "price_max": pmax, "python_bench_ms": m.python_bench_ms,
         "brands": brands.len(),
+        "mlp_layers": std::iter::once(m.mlp.layers.first().map_or(0, |l| l.n_in))
+            .chain(m.mlp.layers.iter().map(|l| l.n_out)).collect::<Vec<_>>(),
     }))
 }
 
@@ -126,6 +132,62 @@ async fn bench_handler(State(m): State<Arc<Model>>, Query(q): Query<BenchQuery>)
     Json(res)
 }
 
+fn photos_dir() -> std::path::PathBuf {
+    std::env::var("PHOTOS_DIR").map(Into::into).unwrap_or_else(|_| "photos".into())
+}
+
+/// Имя файла своего фото: `<id>.jpg` или `<id>-<номер>.jpg` (jpg, jpeg, png, webp, avif).
+fn local_photo_id(name: &str) -> Option<i64> {
+    let (stem, ext) = name.rsplit_once('.')?;
+    if !matches!(ext.to_ascii_lowercase().as_str(), "jpg" | "jpeg" | "png" | "webp" | "avif") {
+        return None;
+    }
+    stem.split('-').next()?.parse().ok()
+}
+
+/// Свои фото из папки идут первыми, затем — фото из Wikimedia Commons с атрибуцией.
+/// Папка перечитывается при каждом запросе: новые файлы видны без перезапуска сервера.
+async fn photos() -> impl IntoResponse {
+    let mut map: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
+    if let Ok(entries) = std::fs::read_dir(photos_dir()) {
+        let mut files: Vec<String> = entries.flatten().filter_map(|e| e.file_name().into_string().ok()).collect();
+        files.sort();
+        for f in files {
+            if let Some(id) = local_photo_id(&f) {
+                let list = map.entry(id.to_string()).or_insert_with(|| serde_json::json!([]));
+                list.as_array_mut().unwrap().push(serde_json::json!({"src": format!("/photos/{f}"), "local": true}));
+            }
+        }
+    }
+    if let Ok(serde_json::Value::Object(commons)) = serde_json::from_str::<serde_json::Value>(COMMONS_PHOTOS) {
+        for (id, v) in commons {
+            if let (Ok(_), serde_json::Value::Array(items)) = (id.parse::<i64>(), v) {
+                let list = map.entry(id).or_insert_with(|| serde_json::json!([]));
+                list.as_array_mut().unwrap().extend(items);
+            }
+        }
+    }
+    ([(header::CACHE_CONTROL, "no-cache")], Json(serde_json::Value::Object(map)))
+}
+
+async fn photo_file(Path(name): Path<String>) -> axum::response::Response {
+    // только плоские имена вида 57.jpg / 57-2.webp — без подкаталогов и «..»
+    if local_photo_id(&name).is_none() || name.contains(['/', '\\']) || name.contains("..") {
+        return axum::http::StatusCode::NOT_FOUND.into_response();
+    }
+    let ext = name.rsplit_once('.').map(|(_, e)| e.to_ascii_lowercase()).unwrap_or_default();
+    let mime = match ext.as_str() {
+        "png" => "image/png",
+        "webp" => "image/webp",
+        "avif" => "image/avif",
+        _ => "image/jpeg",
+    };
+    match std::fs::read(photos_dir().join(&name)) {
+        Ok(bytes) => ([(header::CONTENT_TYPE, mime), (header::CACHE_CONTROL, "public, max-age=3600")], bytes).into_response(),
+        Err(_) => axum::http::StatusCode::NOT_FOUND.into_response(),
+    }
+}
+
 async fn font(Path(name): Path<String>) -> axum::response::Response {
     match FONTS.iter().find(|(n, _)| *n == name) {
         Some((_, bytes)) => (
@@ -156,6 +218,8 @@ async fn main() {
         .route("/api/recommend", post(recommend))
         .route("/api/bench", get(bench_handler))
         .route("/fonts/{name}", get(font))
+        .route("/api/photos", get(photos))
+        .route("/photos/{name}", get(photo_file))
         .layer(CorsLayer::permissive()) // страницу можно открыть отдельно (файлом или с другого хоста)
         .layer(CompressionLayer::new())
         .with_state(model);
