@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Подбор смартфона</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='2' width='16' height='28' rx='4' fill='%23ffd84a' stroke='%231c2230' stroke-width='2'/%3E%3C/svg%3E">
+<script>
+// адрес API: тот же сервер, ?api=… или localhost, если страница открыта файлом
+const PP_API = new URLSearchParams(location.search).get("api") || (location.protocol === "file:" ? "http://localhost:8080" : "");
+</script>
+<style id="fontfaces" media="not all">
+/* шрифты Unbounded и Onest (SIL OFL) раздаёт сам сервер — страница работает без интернета */
+@font-face { font-family: "Unbounded"; font-weight: 500; font-display: swap; src: url("{API}/fonts/unbounded-cyrillic-500-normal.woff2") format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Unbounded"; font-weight: 500; font-display: swap; src: url("{API}/fonts/unbounded-latin-500-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+20BD, U+2248, U+2033; }
+@font-face { font-family: "Unbounded"; font-weight: 700; font-display: swap; src: url("{API}/fonts/unbounded-cyrillic-700-normal.woff2") format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Unbounded"; font-weight: 700; font-display: swap; src: url("{API}/fonts/unbounded-latin-700-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+20BD, U+2248, U+2033; }
+@font-face { font-family: "Unbounded"; font-weight: 800; font-display: swap; src: url("{API}/fonts/unbounded-cyrillic-800-normal.woff2") format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Unbounded"; font-weight: 800; font-display: swap; src: url("{API}/fonts/unbounded-latin-800-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+20BD, U+2248, U+2033; }
+@font-face { font-family: "Onest"; font-weight: 400; font-display: swap; src: url("{API}/fonts/onest-cyrillic-400-normal.woff2") format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Onest"; font-weight: 400; font-display: swap; src: url("{API}/fonts/onest-latin-400-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+20BD, U+2248, U+2033; }
+@font-face { font-family: "Onest"; font-weight: 500; font-display: swap; src: url("{API}/fonts/onest-cyrillic-500-normal.woff2") format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Onest"; font-weight: 500; font-display: swap; src: url("{API}/fonts/onest-latin-500-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+20BD, U+2248, U+2033; }
+@font-face { font-family: "Onest"; font-weight: 600; font-display: swap; src: url("{API}/fonts/onest-cyrillic-600-normal.woff2") format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Onest"; font-weight: 600; font-display: swap; src: url("{API}/fonts/onest-latin-600-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+20BD, U+2248, U+2033; }
+@font-face { font-family: "Onest"; font-weight: 700; font-display: swap; src: url("{API}/fonts/onest-cyrillic-700-normal.woff2") format("woff2"); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Onest"; font-weight: 700; font-display: swap; src: url("{API}/fonts/onest-latin-700-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+20BD, U+2248, U+2033; }
+</style>
+<script>{ const f = document.getElementById("fontfaces"); f.textContent = f.textContent.replaceAll("{API}", PP_API); f.media = "all"; }</script>
+<style>
+:root {
+  --paper: #eef1f5;
+  --panel: #ffffff;
+  --ink: #1c2230;
+  --ink-soft: #5b6475;
+  --line: #d5dae2;
+  --tag: #ffd84a;
+  --tag-edge: #e9bf1f;
+  --blue: #2f5bea;
+  --blue-soft: #e6ecfd;
+  --deal: #1f8f5a;
+  --over: #c93c2a;
+  --ui: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --display: "Unbounded", "Onest", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #151a24; --panel: #1e2431; --ink: #eef1f6; --ink-soft: #a3abbb; --line: #333b4b;
+    --blue: #7c9bff; --blue-soft: #263256; --deal: #4cc58a; --over: #ff7a66;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--ui); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+/* ---------- шапка ---------- */
+.top {
+  max-width: 1320px; margin: 0 auto; padding: 28px 24px 12px;
+  display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px;
+}
+.top h1 { font: 800 clamp(26px, 4vw, 40px)/1.05 var(--display); margin: 0; letter-spacing: -0.02em; }
+.top p { margin: 8px 0 0; color: var(--ink-soft); max-width: 60ch; }
+.speed {
+  display: flex; align-items: baseline; gap: 10px; padding: 10px 16px; border-radius: 14px;
+  background: var(--panel); border: 1px solid var(--line);
+}
+.speed b { font: 700 28px/1 var(--display); font-variant-numeric: tabular-nums; }
+.speed span { color: var(--ink-soft); font-size: 14px; }
+.speed.flash b { animation: flash .5s ease-out; }
+@keyframes flash { from { color: var(--blue); } to { color: inherit; } }
+
+/* ---------- раскладка ---------- */
+.layout {
+  max-width: 1320px; margin: 0 auto; padding: 12px 24px 48px;
+  display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start;
+}
+@media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+
+/* ---------- анкета ---------- */
+.form {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 20px;
+  position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto;
+}
+@media (max-width: 960px) { .form { position: static; max-height: none; } }
+.form h2 { font: 600 15px/1.3 var(--ui); margin: 0 0 10px; color: var(--ink-soft); }
+.group + .group { margin-top: 22px; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 7px 14px;
+  cursor: pointer; font-size: 15px;
+}
+.chip:hover { border-color: var(--ink-soft); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.preset-hint { margin: 10px 0 0; font-size: 14px; color: var(--ink-soft); min-height: 1.5em; }
+
+.budget { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.budget label { font-size: 13px; color: var(--ink-soft); display: block; }
+.money {
+  display: flex; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 0 12px;
+  background: var(--paper);
+}
+.money input { border: 0; background: transparent; width: 100%; padding: 10px 0; font-weight: 600;
+  font-variant-numeric: tabular-nums; outline: none; }
+.money:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.money span { color: var(--ink-soft); }
+
+.slider { margin-top: 14px; }
+.slider .row { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
+.slider output { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+.slider small { display: block; color: var(--ink-soft); font-size: 13px; line-height: 1.35; }
+input[type=range] { width: 100%; accent-color: var(--blue); margin: 6px 0 0; }
+
+.seg { display: flex; border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button {
+  flex: 1; border: 0; background: transparent; padding: 7px 4px; border-radius: 9px; cursor: pointer;
+  font-size: 14px; white-space: nowrap;
+}
+.seg button[aria-pressed="true"] { background: var(--blue); color: #fff; }
+.field { margin-top: 14px; }
+.field > span { display: block; font-size: 14px; margin-bottom: 6px; }
+.check { display: flex; align-items: center; gap: 10px; margin-top: 12px; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--blue); }
+.scen { display: flex; gap: 8px; flex-wrap: wrap; }
+details.more { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 14px; }
+details.more summary { cursor: pointer; font-weight: 600; }
+.reset { margin-top: 22px; width: 100%; border: 1px dashed var(--line); background: transparent;
+  border-radius: 12px; padding: 10px; cursor: pointer; color: var(--ink-soft); }
+
+/* ---------- итог анкеты ---------- */
+.verdict {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 18px 20px;
+  display: grid; grid-template-columns: 1fr auto; gap: 14px 24px; align-items: center;
+}
+.verdict h2 { margin: 0; font: 600 22px/1.25 var(--ui); }
+.verdict p { margin: 4px 0 0; color: var(--ink-soft); }
+.count { text-align: right; }
+.count b { font: 700 30px/1 var(--display); }
+.count span { display: block; font-size: 13px; color: var(--ink-soft); }
+.proba { grid-column: 1 / -1; }
+.proba .bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--paper); }
+.proba .bar i { display: block; transition: width .35s ease; }
+.proba .bar i:nth-child(1) { background: #9fb3d9; }
+.proba .bar i:nth-child(2) { background: var(--blue); }
+.proba .bar i:nth-child(3) { background: var(--ink); }
+.proba .legend { display: flex; gap: 4px 18px; flex-wrap: wrap; margin-top: 8px; font-size: 14px; color: var(--ink-soft); }
+.proba .legend em { font-style: normal; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+@media (max-width: 560px) { .verdict { grid-template-columns: 1fr; } .count { text-align: left; } }
+
+.hint {
+  margin-top: 14px; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--tag-edge);
+  background: color-mix(in srgb, var(--tag) 22%, var(--panel));
+}
+.tabs { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+.tabs button { border: 1px solid var(--line); background: var(--panel); border-radius: 12px; padding: 8px 14px; cursor: pointer; text-align: left; }
+.tabs button small { display: block; color: var(--ink-soft); font-size: 12px; }
+.tabs button[aria-pressed="true"] { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
+
+.section-title { font: 600 18px/1.3 var(--ui); margin: 28px 0 4px; }
+.section-note { color: var(--ink-soft); font-size: 14px; margin: 0 0 12px; }
+
+/* ---------- ценник ---------- */
+.tag {
+  position: relative; background: var(--tag); color: #1c2230; border-radius: 6px 18px 18px 6px;
+  padding: 18px 20px 18px 34px; border: 1px solid var(--tag-edge);
+}
+.tag::before { /* дырочка для крючка, как у настоящего ценника */
+  content: ""; position: absolute; left: 12px; top: 22px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--paper); box-shadow: inset 0 1px 2px rgba(0,0,0,.25);
+}
+.tag .brand { font-size: 14px; opacity: .75; }
+.tag .name { font: 600 19px/1.25 var(--ui); margin: 2px 0 10px; }
+.tag .price { font: 800 clamp(30px, 4.6vw, 46px)/1 var(--display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.tag .price small { font-size: .5em; font-weight: 700; }
+.tag .fair { font-size: 14px; margin-top: 6px; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.badge { font-size: 13px; padding: 3px 9px; border-radius: 999px; background: rgba(28,34,48,.1); }
+.badge.deal { background: var(--deal); color: #fff; }
+.badge.over { background: var(--over); color: #fff; }
+.badge.rug { background: #1c2230; color: var(--tag); }
+.pros { margin: 12px 0 0; padding: 0; list-style: none; }
+.pros li { padding-left: 18px; position: relative; }
+.pros li::before { content: "+"; position: absolute; left: 0; font-weight: 700; }
+.specs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 14px; margin-top: 14px;
+  padding-top: 12px; border-top: 1px dashed rgba(28,34,48,.35); font-size: 14px; }
+.specs div span { display: block; opacity: .7; font-size: 12px; }
+.specs div b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.tag .group { font-size: 13px; margin-top: 12px; opacity: .8; }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: stretch; }
+.hero .tag { padding: 26px 28px 24px 44px; }
+.hero .tag::before { left: 16px; top: 30px; width: 14px; height: 14px; }
+.hero .tag .name { font-size: 24px; }
+.hero .tag .price { font-size: clamp(40px, 6vw, 64px); }
+.why { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 20px; }
+.why h3 { margin: 0 0 8px; font: 600 17px/1.3 var(--ui); }
+.why p { margin: 0 0 12px; color: var(--ink-soft); }
+.meter { margin-top: 10px; }
+.meter .lbl { display: flex; justify-content: space-between; font-size: 14px; }
+.meter .track { height: 8px; border-radius: 4px; background: var(--paper); overflow: hidden; margin-top: 4px; }
+.meter .track i { display: block; height: 100%; background: var(--blue); }
+@media (max-width: 760px) { .hero { grid-template-columns: 1fr; } }
+
+.alts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.alts .specs { grid-template-columns: repeat(2, 1fr); }
+.alts .tag { background: var(--panel); color: var(--ink); border-color: var(--line); }
+.alts .tag::before { background: var(--paper); }
+.alts .tag .price { font-size: 30px; }
+.alts .badge { background: var(--paper); }
+.alts .badge.deal { background: var(--deal); }
+.alts .badge.over { background: var(--over); }
+.alts .badge.rug { background: var(--ink); color: var(--panel); }
+.alts .specs { border-top-color: var(--line); }
+
+/* ---------- топ-10 ---------- */
+.list { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+.item { border-top: 1px solid var(--line); }
+.item:first-child { border-top: 0; }
+.item > button {
+  width: 100%; display: grid; grid-template-columns: 2.2em 1fr auto; gap: 12px; align-items: center;
+  padding: 12px 18px; background: transparent; border: 0; cursor: pointer; text-align: left;
+}
+.item > button:hover { background: color-mix(in srgb, var(--blue-soft) 50%, transparent); }
+.item .rank { font: 700 18px/1 var(--display); color: var(--ink-soft); }
+.item .title { font-weight: 600; display: block; }
+.item .sub { font-size: 13px; color: var(--ink-soft); display: block; }
+.item .cost { font: 700 18px/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.item.bad .title::after { content: " — не подходит"; font-weight: 400; color: var(--over); font-size: 14px; }
+.item .detail { padding: 0 18px 16px calc(18px + 2.2em + 12px); font-size: 14px; }
+.item .detail .specs { border-top-color: var(--line); margin-top: 8px; }
+.item .detail p { margin: 0; color: var(--ink-soft); }
+
+/* ---------- скорость ---------- */
+.bench { margin-top: 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 20px; }
+.bench h3 { margin: 0; font: 600 18px/1.3 var(--ui); }
+.bench p { margin: 6px 0 14px; color: var(--ink-soft); max-width: 70ch; }
+.bench button.run { border: 0; background: var(--ink); color: var(--panel); border-radius: 12px; padding: 10px 18px; cursor: pointer; font-weight: 600; }
+.bench button.run:disabled { opacity: .6; cursor: progress; }
+.race { margin-top: 18px; display: grid; gap: 12px; }
+.race .lane { display: grid; grid-template-columns: 9.5em 1fr auto; gap: 12px; align-items: center; font-size: 15px; }
+.race .track { height: 14px; background: var(--paper); border-radius: 7px; overflow: hidden; }
+.race .track i { display: block; height: 100%; border-radius: 7px; min-width: 3px; }
+.race .rust i { background: var(--blue); }
+.race .py i { background: var(--ink-soft); }
+.race b { font-variant-numeric: tabular-nums; }
+.x { font: 800 clamp(32px, 5vw, 52px)/1 var(--display); margin-top: 16px; }
+.x span { display: block; font: 400 15px/1.4 var(--ui); color: var(--ink-soft); margin-top: 4px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 14px; font-size: 14px; color: var(--ink-soft); }
+.facts b { color: var(--ink); }
+
+.error { background: var(--panel); border: 1px solid var(--over); border-radius: 20px; padding: 20px; }
+.error h2 { margin: 0 0 6px; font-size: 20px; }
+footer { max-width: 1320px; margin: 0 auto; padding: 0 24px 32px; color: var(--ink-soft); font-size: 13px; }
+/* ---------- телефон: плашка с лучшим вариантом, пока анкета на экране ---------- */
+.mini { display: none; }
+@media (max-width: 960px) {
+  .slider small { display: none; }
+  .mini {
+    position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 10; display: flex; align-items: center;
+    gap: 12px; padding: 12px 16px; border-radius: 16px; border: 1px solid var(--tag-edge);
+    background: var(--tag); color: #1c2230; box-shadow: 0 6px 24px rgba(20, 26, 40, .25); cursor: pointer; text-align: left;
+    transition: transform .25s ease, opacity .25s ease;
+  }
+  .mini[hidden] { display: flex; transform: translateY(140%); opacity: 0; pointer-events: none; }
+  .mini span { flex: 1; min-width: 0; font-size: 14px; }
+  .mini span b { display: block; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mini strong { font: 800 20px/1 var(--display); white-space: nowrap; }
+  footer { padding-bottom: 96px; }
+}
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Подбор смартфона</h1>
+    <p id="lead">Отвечайте на вопросы — подборка обновляется сразу. Нейросеть, кластеризация и оценка цены работают на сервере на Rust.</p>
+  </div>
+  <div class="speed" id="speed" aria-live="polite" title="Время расчёта подбора на сервере">
+    <b id="speed-val">—</b><span id="speed-lbl">мкс на подбор</span>
+  </div>
+</header>
+
+<main class="layout">
+  <form class="form" id="form" autocomplete="off" onsubmit="return false">
+    <div class="group">
+      <h2>Для чего телефон</h2>
+      <div class="presets" id="presets"></div>
+      <p class="preset-hint" id="preset-hint"></p>
+    </div>
+
+    <div class="group">
+      <h2>Бюджет</h2>
+      <div class="budget">
+        <div><label for="budget_min">от</label>
+          <div class="money"><input id="budget_min" inputmode="numeric" value="0"><span>₽</span></div></div>
+        <div><label for="budget_rub">до</label>
+          <div class="money"><input id="budget_rub" inputmode="numeric" value="35 000"><span>₽</span></div></div>
+      </div>
+      <input type="range" id="budget_slider" min="0" max="1000" aria-label="Бюджет, верхняя граница">
+    </div>
+
+    <div class="group">
+      <h2>Что важно</h2>
+      <div id="sliders-main"></div>
+    </div>
+
+    <div class="group">
+      <h2>Обязательные условия</h2>
+      <div class="field"><span>Система</span>
+        <div class="seg" data-key="os_pref" data-options='[[0,"Неважно"],[1,"Android"],[2,"iOS"]]'></div></div>
+      <label class="check"><input type="checkbox" id="need_nfc" checked> NFC — оплата телефоном</label>
+    </div>
+
+    <details class="more" id="more">
+      <summary>Ещё параметры</summary>
+      <div id="sliders-more"></div>
+      <div class="field"><span>Память от</span>
+        <div class="seg" data-key="min_rom" data-options='[[64,"64 ГБ"],[128,"128"],[256,"256"],[512,"512"]]'></div></div>
+      <div class="field"><span>Размер экрана</span>
+        <div class="seg" data-key="screen_pref" data-options='[[0,"Любой"],[1,"до 6,3″"],[2,"6,3–6,7″"],[3,"от 6,7″"],[4,"от 6,9″"]]'></div></div>
+      <div class="field"><span>Частота экрана</span>
+        <div class="seg" data-key="min_hz" data-options='[[0,"Любая"],[90,"от 90 Гц"],[120,"от 120"],[144,"от 144"]]'></div></div>
+      <div class="field"><span>eSIM</span>
+        <div class="seg" data-key="esim_pref" data-options='[[0,"Не нужна"],[1,"Плюс"],[2,"Обязательно"]]'></div></div>
+      <div class="field"><span>ИК-порт (пульт)</span>
+        <div class="seg" data-key="ir_pref" data-options='[[0,"Не нужен"],[1,"Плюс"],[2,"Обязательно"]]'></div></div>
+      <div class="field"><span>Сценарии</span>
+        <div class="scen">
+          <button type="button" class="chip" data-flag="gaming" aria-pressed="false">Игры</button>
+          <button type="button" class="chip" data-flag="photo" aria-pressed="false">Фото</button>
+          <button type="button" class="chip" data-flag="work" aria-pressed="false">Работа</button>
+        </div></div>
+    </details>
+    <button type="button" class="reset" id="reset">Сбросить ответы</button>
+  </form>
+
+  <section id="results" aria-live="polite" aria-busy="true"></section>
+</main>
+<button type="button" class="mini" id="mini" hidden aria-label="Перейти к подборке"></button>
+<footer id="foot"></footer>
+
+<script>
+"use strict";
+const API = PP_API;
+const $ = (s, el = document) => el.querySelector(s);
+const nf = new Intl.NumberFormat("ru-RU");
+const rub = v => nf.format(Math.round(v));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const MAIN = ["imp_camera", "imp_active", "imp_perf", "imp_compact"];
+
+let META = null, state = {}, activePreset = null, activeSeg = 0, lastData = null, segSig = "";
+
+// ---------- бюджет: шкала ползунка логарифмическая (5 000 – 250 000 ₽) ----------
+const B_LO = 5000, B_HI = 250000;
+const sliderToRub = t => Math.round(B_LO * Math.pow(B_HI / B_LO, t / 1000) / 1000) * 1000;
+const rubToSlider = r => Math.round(1000 * Math.log(Math.min(Math.max(r, B_LO), B_HI) / B_LO) / Math.log(B_HI / B_LO));
+const parseRub = s => Number(String(s).replace(/[^\d]/g, "")) || 0;
+
+function defaults() {
+  const d = {budget_rub: 35000, budget_min: 0, gaming: 0, photo: 0, work: 0, os_pref: 0, need_nfc: 1,
+             esim_pref: 0, ir_pref: 0, screen_pref: 0, min_hz: 0, min_rom: 128};
+  for (const s of META.ui.importance) d[s.key] = s.default;
+  return d;
+}
+
+function buildForm() {
+  const pre = $("#presets");
+  for (const p of META.ui.presets) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = p.name; b.setAttribute("aria-pressed", "false");
+    b.onclick = () => applyPreset(p);
+    pre.append(b);
+  }
+  for (const s of META.ui.importance) {
+    const wrap = document.createElement("div");
+    wrap.className = "slider";
+    wrap.innerHTML = `<div class="row"><label for="${s.key}">${esc(s.title)}</label><output id="${s.key}_out"></output></div>
+      <input type="range" id="${s.key}" min="0" max="10" step="1"><small>${esc(s.hint)}</small>`;
+    $(MAIN.includes(s.key) ? "#sliders-main" : "#sliders-more").append(wrap);
+    $("input", wrap).addEventListener("input", e => { set(s.key, +e.target.value); });
+  }
+  document.querySelectorAll(".seg").forEach(seg => {
+    for (const [v, label] of JSON.parse(seg.dataset.options)) {
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = label; b.dataset.value = v;
+      b.onclick = () => set(seg.dataset.key, v);
+      seg.append(b);
+    }
+  });
+  document.querySelectorAll("[data-flag]").forEach(b => b.onclick = () => set(b.dataset.flag, state[b.dataset.flag] ? 0 : 1));
+  $("#need_nfc").onchange = e => set("need_nfc", e.target.checked ? 1 : 0);
+  $("#budget_slider").oninput = e => {
+    const v = sliderToRub(+e.target.value);
+    set("budget_rub", v, {keepSlider: true});
+    if (state.budget_min > v) set("budget_min", v);
+  };
+  const money = (id) => {
+    const el = $("#" + id);
+    el.addEventListener("input", () => {
+      const v = parseRub(el.value);
+      const pos = el.value.length - el.selectionStart;
+      el.value = v ? rub(v) : (id === "budget_min" ? "0" : "");
+      el.setSelectionRange(el.value.length - pos, el.value.length - pos);
+      if (id === "budget_rub" && v < 3000) return; // ждём, пока человек допишет число
+      set(id, v, {keepInput: true});
+    });
+    el.addEventListener("blur", () => {
+      if (id === "budget_rub" && state.budget_rub < state.budget_min) set("budget_rub", state.budget_min);
+      el.value = rub(state[id]);
+    });
+  };
+  money("budget_min"); money("budget_rub");
+  $("#reset").onclick = () => { state = defaults(); activePreset = null; syncForm(); request(); };
+}
+
+function applyPreset(p) {
+  const keepBudget = {budget_rub: state.budget_rub, budget_min: state.budget_min};
+  state = {...defaults(), ...p.values, ...keepBudget};
+  activePreset = p.name;
+  syncForm(); request();
+}
+
+function set(key, value, opts = {}) {
+  state[key] = value;
+  if (!key.startsWith("budget")) activePreset = null; // ручная правка ползунка — уже не готовый профиль
+  syncForm(opts); request();
+}
+
+function syncForm(opts = {}) {
+  for (const s of META.ui.importance) {
+    $("#" + s.key).value = state[s.key];
+    $("#" + s.key + "_out").textContent = state[s.key];
+  }
+  document.querySelectorAll(".seg").forEach(seg => seg.querySelectorAll("button").forEach(b =>
+    b.setAttribute("aria-pressed", String(+b.dataset.value === +state[seg.dataset.key]))));
+  document.querySelectorAll("[data-flag]").forEach(b => b.setAttribute("aria-pressed", String(!!state[b.dataset.flag])));
+  $("#need_nfc").checked = !!state.need_nfc;
+  if (!opts.keepInput) { $("#budget_rub").value = rub(state.budget_rub); $("#budget_min").value = rub(state.budget_min); }
+  if (!opts.keepSlider) $("#budget_slider").value = rubToSlider(state.budget_rub);
+  document.querySelectorAll("#presets .chip").forEach(b => b.setAttribute("aria-pressed", String(b.textContent === activePreset)));
+  const p = META.ui.presets.find(x => x.name === activePreset);
+  $("#preset-hint").textContent = p ? p.hint : "Выберите готовый профиль или настройте ползунки сами.";
+}
+
+// ---------- запрос: дребезг 40 мс, старый запрос отменяется ----------
+let timer = null, ctrl = null;
+function request() {
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    ctrl?.abort(); ctrl = new AbortController();
+    const t0 = performance.now();
+    try {
+      const r = await fetch(API + "/api/recommend", {method: "POST", signal: ctrl.signal,
+        headers: {"Content-Type": "application/json"}, body: JSON.stringify({...state, top_n: 10})});
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const data = await r.json();
+      const rtt = performance.now() - t0;
+      // при смене набора сегментов открываем первый, где есть подходящие модели
+      const sig = data.segments.map(x => x.title).join("|");
+      if (sig !== segSig) {
+        segSig = sig;
+        const firstOk = data.segments.findIndex(x => x.result.feasible > 0);
+        activeSeg = Math.max(firstOk, 0);
+      }
+      activeSeg = Math.min(activeSeg, Math.max(data.segments.length - 1, 0));
+      lastData = data;
+      render(data, rtt);
+    } catch (e) {
+      if (e.name !== "AbortError") renderError(e);
+    }
+  }, 40);
+}
+
+function showSpeed(us, rtt) {
+  const box = $("#speed");
+  $("#speed-val").textContent = us < 1000 ? nf.format(Math.round(us)) : (us / 1000).toFixed(1).replace(".", ",");
+  $("#speed-lbl").textContent = (us < 1000 ? "мкс" : "мс") + ` на подбор · ответ за ${Math.round(rtt)} мс`;
+  box.classList.remove("flash"); void box.offsetWidth; box.classList.add("flash");
+}
+
+// ---------- отрисовка ----------
+function specs(r) {
+  const s = [
+    ["Память", `${r.ram_gb}/${r.rom_gb} ГБ`], ["Экран", `${String(r.screen_in).replace(".", ",")}″, ${r.refresh_hz} Гц`],
+    ["Камера", `${r.camera_mp} МП`], ["AnTuTu", `${nf.format(r.antutu_k)} тыс.`],
+    ["Активно", `≈${Math.round(r.active_h)} ч`], ["Вес", `${r.weight_g} г`],
+  ];
+  return `<div class="specs">${s.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("")}</div>`;
+}
+function badges(r) {
+  return r.badges.map(b => `<span class="badge ${b.startsWith("выгодно") ? "deal" : b.startsWith("переплата") ? "over" : b === "защищённый" ? "rug" : ""}">${esc(b)}</span>`).join("");
+}
+function tag(r) {
+  const brandShown = (r.name.toLowerCase().startsWith(r.brand.toLowerCase()) ? "" : r.brand + ", ") + "класс: " + r.class_name.toLowerCase();
+  return `<article class="tag">
+    <div class="brand">${esc(brandShown)}</div>
+    <div class="name">${esc(r.name)}</div>
+    <div class="price">${rub(r.price)} <small>₽</small></div>
+    ${r.fair ? `<div class="fair">Справедливая цена по модели ≈ ${rub(r.fair)} ₽</div>` : ""}
+    <div class="badges">${badges(r)}</div>
+    <ul class="pros">${r.pros.map(p => `<li>${esc(p)}</li>`).join("")}</ul>
+    ${specs(r)}
+    <div class="group">Группа: ${esc(r.cluster)}</div>
+  </article>`;
+}
+
+function renderResult(res, data) {
+  const blocks = res.blocks;
+  if (!blocks.length) return `<p class="section-note">В этом диапазоне телефонов нет.</p>`;
+  const best = blocks[0].rows[0];
+  const p = res.proba;
+  const cls = ["Бюджетный", "Средний", "Флагман"];
+  let html = res.feasible === 0
+    ? `<div class="hint">Здесь нет моделей, которые проходят все условия. Ниже — ближайшие варианты, в списке отмечено, что не так.</div><br>` : "";
+  html += `<div class="hero">${tag(best)}
+    <div class="why"><h3>Почему он</h3>
+      <p>Сильнее всего для ваших ответов: ${esc(best.reasons)}.</p>
+      <p>Нейросеть отнесла запрос к классу «${esc(res.class_name)}», ближе всего группа «${esc(res.cluster_name)}».</p>
+      ${p.map((v, i) => `<div class="meter"><div class="lbl"><span>${cls[i]}</span><b>${Math.round(v * 100)}%</b></div>
+        <div class="track"><i style="width:${(v * 100).toFixed(1)}%"></i></div></div>`).join("")}
+    </div></div>`;
+  for (const b of blocks.slice(1)) {
+    html += `<h3 class="section-title">${esc(b.title)}</h3><p class="section-note">${esc(b.note || "")}</p>
+      <div class="alts">${b.rows.map(tag).join("")}</div>`;
+  }
+  html += `<h3 class="section-title">Топ-${res.table.length} с учётом разнообразия</h3>
+    <p class="section-note">Не больше двух моделей одного бренда в первой пятёрке и минимум три группы в десятке. Нажмите на строку, чтобы раскрыть.</p>
+    <div class="list">${res.table.map((r, i) => `
+      <div class="item${r.ok ? "" : " bad"}">
+        <button type="button" aria-expanded="false" data-i="${i}">
+          <span class="rank">${i + 1}</span>
+          <span><span class="title">${esc(r.name)}</span><span class="sub">${esc(r.cluster)} · оценка ${r.score.toFixed(2).replace(".", ",")}</span></span>
+          <span class="cost">${rub(r.price)} ₽</span>
+        </button>
+        <div class="detail" hidden><p>${esc(r.reasons)}</p><div class="badges">${badges(r)}</div>${specs(r)}</div>
+      </div>`).join("")}</div>`;
+  return html;
+}
+
+function render(data, rtt) {
+  showSpeed(data.compute_us, rtt);
+  const root = $("#results");
+  root.setAttribute("aria-busy", "false");
+  const segs = data.segments;
+  const res = segs.length ? segs[activeSeg].result : data;
+  const p = data.proba;
+  let html = `<div class="verdict">
+      <div><h2>Вам подойдёт класс «${esc(data.class_name)}»</h2>
+        <p>Ближайшая группа: ${esc(data.cluster_name)}</p></div>
+      <div class="count"><b>${data.feasible}</b><span>из ${data.total} моделей проходят условия</span></div>
+      <div class="proba"><div class="bar">${p.map(v => `<i style="width:${(v * 100).toFixed(1)}%"></i>`).join("")}</div>
+        <div class="legend">${["Бюджетный", "Средний", "Флагман"].map((c, i) =>
+          `<span><span class="dot" style="background:${["#9fb3d9", "var(--blue)", "var(--ink)"][i]}"></span>${c} <em>${Math.round(p[i] * 100)}%</em></span>`).join("")}</div></div>
+    </div>`;
+  if (data.hint) html += `<div class="hint">${esc(data.hint.text)}</div>`;
+  if (segs.length) {
+    html += `<div class="tabs" role="group" aria-label="Ценовые сегменты">${segs.map((s, i) =>
+      `<button type="button" data-seg="${i}" aria-pressed="${i === activeSeg}">${esc(s.title)}<small>${esc(s.range)} · подходят ${s.result.feasible}</small></button>`).join("")}</div>`;
+  }
+  html += `<div id="res-body">${renderResult(res, data)}</div>`;
+  html += benchHtml();
+  root.innerHTML = html;
+  root.querySelectorAll("[data-seg]").forEach(b => b.onclick = () => { activeSeg = +b.dataset.seg; render(lastData, rtt); });
+  root.querySelectorAll(".item > button").forEach(b => b.onclick = () => {
+    const open = b.getAttribute("aria-expanded") === "true";
+    b.setAttribute("aria-expanded", String(!open));
+    b.nextElementSibling.hidden = open;
+  });
+  $("#bench-run").onclick = runBench;
+  if (benchResult) drawBench(benchResult);
+  updateMini();
+}
+
+// ---------- плашка для телефона ----------
+let resultsVisible = false;
+new IntersectionObserver(([e]) => { resultsVisible = e.isIntersecting; updateMini(); }, {rootMargin: "0px 0px -40% 0px"})
+  .observe(document.getElementById("results"));
+function updateMini() {
+  const mini = $("#mini");
+  const best = lastData && (lastData.segments.length ? lastData.segments[activeSeg].result : lastData).blocks[0]?.rows[0];
+  if (!best) { mini.hidden = true; return; }
+  mini.innerHTML = `<span>Лучший выбор<b>${esc(best.name)}</b></span><strong>${rub(best.price)} ₽</strong>`;
+  mini.hidden = resultsVisible;
+}
+document.getElementById("mini").onclick = () => $("#results").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+
+let benchResult = null;
+function benchHtml() {
+  return `<section class="bench" aria-labelledby="bench-h">
+    <h3 id="bench-h">Проверка скорости</h3>
+    <p>Сервер прогоняет 5 000 случайных анкет через весь подбор: полезность, нейросеть, бонус группы, разнообразие и блоки выдачи. Для сравнения — тот же подбор на Python (sklearn + pandas), замеренный при обучении модели.</p>
+    <button type="button" class="run" id="bench-run">Запустить замер</button>
+    <div id="bench-out"></div></section>`;
+}
+async function runBench() {
+  const btn = $("#bench-run");
+  btn.disabled = true; btn.textContent = "Считаем…";
+  try {
+    const r = await fetch(API + "/api/bench?n=5000");
+    benchResult = await r.json();
+    drawBench(benchResult);
+  } catch (e) { $("#bench-out").textContent = "Замер не удался: " + e.message; }
+  btn.disabled = false; btn.textContent = "Повторить замер";
+}
+function drawBench(b) {
+  const rustMs = b.mean_us / 1000, py = b.python_ms;
+  const x = py ? py / rustMs : null;
+  const max = Math.max(rustMs, py || 0);
+  $("#bench-out").innerHTML = `
+    <div class="race">
+      <div class="lane rust"><span>Rust</span><div class="track"><i style="width:${(rustMs / max * 100).toFixed(2)}%"></i></div><b>${nf.format(Math.round(b.mean_us))} мкс</b></div>
+      ${py ? `<div class="lane py"><span>Python</span><div class="track"><i style="width:100%"></i></div><b>${String(py.toFixed(1)).replace(".", ",")} мс</b></div>` : ""}
+    </div>
+    ${x ? `<div class="x">в ${nf.format(Math.round(x))} раз быстрее<span>на один подбор, в среднем по ${nf.format(b.n)} анкетам</span></div>` : ""}
+    <div class="facts"><span>Медиана <b>${nf.format(Math.round(b.p50_us))} мкс</b></span>
+      <span>99-й перцентиль <b>${nf.format(Math.round(b.p99_us))} мкс</b></span>
+      <span>Пропускная способность <b>${nf.format(Math.round(b.per_second))} подборов/с</b> на одном ядре</span></div>`;
+}
+
+function renderError(e) {
+  const root = $("#results");
+  root.setAttribute("aria-busy", "false");
+  root.innerHTML = `<div class="error"><h2>Сервер подбора не отвечает</h2>
+    <p>Запустите <code>phonepicker-server</code> и обновите страницу. Адрес API: <code>${esc(API || location.origin)}</code>. Ошибка: ${esc(e.message)}</p></div>`;
+}
+
+(async () => {
+  try {
+    const r = await fetch(API + "/api/meta");
+    META = await r.json();
+  } catch (e) { renderError(e); return; }
+  const m = META.metrics;
+  $("#lead").textContent = `${META.phones} моделей, ${META.groups.length} групп. Отвечайте на вопросы — подборка обновляется сразу.`;
+  $("#foot").textContent = `Модель обучена ${META.trained_at.replace("T", " ")} на ${nf.format(m.surveys)} анкетах: точность нейросети ${Math.round(m.accuracy * 100)}%, F1 ${m.f1_macro.toFixed(2).replace(".", ",")}, ROC AUC ${m.roc_auc.toFixed(2).replace(".", ",")}. Цены — из Telegram-каналов и маркетплейсов, оценка автономности расчётная.`;
+  state = defaults();
+  buildForm(); syncForm(); request();
+})();
+</script>
+</body>
+</html>
