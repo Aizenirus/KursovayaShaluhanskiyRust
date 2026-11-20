@@ -29,27 +29,22 @@ const PP_API = new URLSearchParams(location.search).get("api") || (location.prot
 <script>{ const f = document.getElementById("fontfaces"); f.textContent = f.textContent.replaceAll("{API}", PP_API); f.media = "all"; }</script>
 <style>
 :root {
-  --paper: #eef1f5;
-  --panel: #ffffff;
-  --ink: #1c2230;
-  --ink-soft: #5b6475;
-  --line: #d5dae2;
+  color-scheme: dark;
+  --paper: #151a24;
+  --panel: #1e2431;
+  --ink: #eef1f6;
+  --ink-soft: #a3abbb;
+  --line: #333b4b;
   --tag: #ffd84a;
   --tag-edge: #e9bf1f;
-  --blue: #2f5bea;
-  --blue-soft: #e6ecfd;
-  --deal: #1f8f5a;
-  --over: #c93c2a;
-  --photo-bg: #e3e8ef;
+  --blue: #7c9bff;
+  --blue-soft: #263256;
+  --deal: #4cc58a;
+  --over: #ff7a66;
+  --photo-bg: #10151e;
   --pad: clamp(16px, 2.4vw, 48px);
   --ui: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --display: "Unbounded", "Onest", system-ui, sans-serif;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #151a24; --panel: #1e2431; --ink: #eef1f6; --ink-soft: #a3abbb; --line: #333b4b;
-    --blue: #7c9bff; --blue-soft: #263256; --deal: #4cc58a; --over: #ff7a66; --photo-bg: #10151e;
-  }
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -68,7 +63,8 @@ button, input, select { font: inherit; color: inherit; }
   display: grid; grid-template-columns: clamp(340px, 23vw, 440px) minmax(0, 1fr); gap: clamp(18px, 1.6vw, 32px);
   align-items: start;
 }
-@media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+@media (max-width: 960px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+#results, .form { min-width: 0; }
 
 /* ---------- анкета ---------- */
 .form {
@@ -89,19 +85,26 @@ button, input, select { font: inherit; color: inherit; }
 .money input { border: 0; background: transparent; width: 100%; padding: 10px 0; font-weight: 600; font-variant-numeric: tabular-nums; outline: none; }
 .money:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 .money span { color: var(--ink-soft); }
-.slider { margin-top: 14px; }
-.slider .row { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
-.slider output { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
-.slider small { display: block; color: var(--ink-soft); font-size: 13px; line-height: 1.35; }
 input[type=range] { width: 100%; accent-color: var(--blue); margin: 6px 0 0; }
 .seg { display: flex; border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
 .seg button { flex: 1; border: 0; background: transparent; padding: 7px 4px; border-radius: 9px; cursor: pointer; font-size: 14px; white-space: nowrap; }
-.seg button[aria-pressed="true"] { background: var(--blue); color: #fff; }
+.seg button[aria-pressed="true"] { background: var(--blue); color: #10151e; }
 .field { margin-top: 14px; }
 .field > span { display: block; font-size: 14px; margin-bottom: 6px; }
 .check { display: flex; align-items: center; gap: 10px; margin-top: 12px; cursor: pointer; }
 .check input { width: 18px; height: 18px; accent-color: var(--blue); }
 .scen { display: flex; gap: 8px; flex-wrap: wrap; }
+.prio { display: flex; flex-wrap: wrap; gap: 8px; }
+.pchip {
+  display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--paper);
+  border-radius: 12px; padding: 9px 14px; cursor: pointer; font-size: 15px; transition: background .15s, border-color .15s, opacity .15s;
+}
+.pchip:hover { border-color: var(--ink-soft); }
+.pchip .pnum { display: none; width: 22px; height: 22px; border-radius: 50%; background: var(--tag); color: #1c2230; font: 700 12px/22px var(--display); text-align: center; }
+.pchip[aria-pressed="true"] { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 20%, var(--panel)); }
+.pchip[aria-pressed="true"] .pnum { display: inline-block; }
+.pchip.locked { opacity: .45; }
+.prio-hint { margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); min-height: 1.4em; }
 details.more { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 14px; }
 details.more summary { cursor: pointer; font-weight: 600; }
 .reset { margin-top: 22px; width: 100%; border: 1px dashed var(--line); background: transparent; border-radius: 12px; padding: 10px; cursor: pointer; color: var(--ink-soft); }
@@ -118,7 +121,7 @@ details.more summary { cursor: pointer; font-weight: 600; }
 .count span { display: block; font-size: 13px; color: var(--ink-soft); }
 .proba .bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--paper); }
 .proba .bar i { display: block; transition: width .35s ease; }
-.c0 { background: #9fb3d9; } .c1 { background: var(--blue); } .c2 { background: var(--ink); }
+.c0 { background: #5d6b86; } .c1 { background: var(--blue); } .c2 { background: var(--ink); }
 .proba .legend { display: flex; gap: 2px 16px; flex-wrap: wrap; margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
 .proba .legend em { font-style: normal; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 .dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: 0; }
@@ -156,24 +159,38 @@ details.more summary { cursor: pointer; font-weight: 600; }
 }
 .track.dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
 .track:focus-visible { outline-offset: 4px; }
-@media (max-width: 960px) { .track { grid-auto-columns: min(84vw, 380px); } }
+@media (max-width: 960px) {
+  .track { grid-auto-columns: min(84vw, 380px); }
+  .cols { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+  .cols button { white-space: nowrap; flex: none; }
+  .deck-head { flex-direction: column; align-items: stretch; }
+  .deck-nav { justify-content: flex-end; }
+  .bug { position: absolute; } /* на телефоне жучок остаётся в шапке и не закрывает стрелки ленты */
+}
 
 .card {
   scroll-snap-align: start; background: var(--panel); border: 1px solid var(--line); border-radius: 22px; overflow: hidden;
   display: flex; flex-direction: column; min-width: 0;
 }
 .card.best { border: 2px solid var(--tag-edge); }
-.gallery { position: relative; aspect-ratio: 4 / 3.7; background: var(--photo-bg); overflow: hidden; }
+.gallery { position: relative; aspect-ratio: 4 / 3.3; background: var(--photo-bg); overflow: hidden; }
 .gallery img { width: 100%; height: 100%; object-fit: contain; display: block; -webkit-user-drag: none; user-select: none; }
-/* без фото — компактная полоса, а не пустой прямоугольник на полкарточки */
-.gallery.empty { aspect-ratio: auto; display: flex; align-items: center; gap: 12px; padding: 12px 14px; font-size: 13px; color: var(--ink-soft); }
-.gallery.empty .rank { position: static; box-shadow: none; flex: none; }
+/* место под фото: тот же размер, что у снимка, чтобы карточки были одной высоты и фото было куда добавить */
+.gallery.empty { display: grid; place-items: center; }
+.slot {
+  width: calc(100% - 40px); height: calc(100% - 40px); border: 1.5px dashed var(--line); border-radius: 16px;
+  display: grid; align-content: center; justify-items: center; gap: 6px; text-align: center; color: var(--ink-soft); padding: 16px;
+}
+.slot svg { width: 40px; height: 40px; opacity: .65; }
+.slot b { color: var(--ink); font-weight: 600; font-size: 15px; }
+.slot small { font-size: 12px; }
 .gallery .rank {
   position: absolute; left: 12px; top: 12px; min-width: 34px; height: 34px; padding: 0 10px; border-radius: 17px;
   display: grid; place-items: center; background: var(--panel); color: var(--ink); font: 700 15px/1 var(--display);
   box-shadow: 0 1px 4px rgba(20, 26, 40, .18);
 }
 .card.best .gallery .rank { background: var(--tag); color: #1c2230; }
+.gallery .rank { z-index: 1; }
 .gbtn {
   position: absolute; top: 50%; translate: 0 -50%; width: 36px; height: 36px; border-radius: 50%; border: 0; cursor: pointer;
   background: color-mix(in srgb, var(--panel) 88%, transparent); display: grid; place-items: center; opacity: 0; transition: opacity .15s;
@@ -269,7 +286,6 @@ footer { padding: 0 var(--pad) 32px; color: var(--ink-soft); font-size: 13px; }
 /* ---------- телефон: плашка с лучшим вариантом ---------- */
 .mini { display: none; }
 @media (max-width: 960px) {
-  .slider small { display: none; }
   .mini {
     position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 10; display: flex; align-items: center; gap: 12px;
     padding: 12px 16px; border-radius: 16px; border: 1px solid var(--tag-edge); background: var(--tag); color: #1c2230;
@@ -321,8 +337,9 @@ footer { padding: 0 var(--pad) 32px; color: var(--ink-soft); font-size: 13px; }
       <input type="range" id="budget_slider" min="0" max="1000" aria-label="Бюджет, верхняя граница">
     </div>
     <div class="group">
-      <h2>Что важно</h2>
-      <div id="sliders-main"></div>
+      <h2>Что важнее всего</h2>
+      <div class="prio" id="prio" role="group" aria-label="Главные качества телефона, до трёх"></div>
+      <p class="prio-hint" id="prio-hint" aria-live="polite"></p>
     </div>
     <div class="group">
       <h2>Обязательные условия</h2>
@@ -332,7 +349,6 @@ footer { padding: 0 var(--pad) 32px; color: var(--ink-soft); font-size: 13px; }
     </div>
     <details class="more" id="more">
       <summary>Ещё параметры</summary>
-      <div id="sliders-more"></div>
       <div class="field"><span>Память от</span>
         <div class="seg" data-key="min_rom" data-options='[[64,"64 ГБ"],[128,"128"],[256,"256"],[512,"512"]]'></div></div>
       <div class="field"><span>Размер экрана</span>
@@ -366,10 +382,16 @@ const nf = new Intl.NumberFormat("ru-RU");
 const rub = v => nf.format(Math.round(v));
 const dec = (v, d = 2) => v.toFixed(d).replace(".", ",");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
-const MAIN = ["imp_camera", "imp_active", "imp_perf", "imp_compact"];
+// «Три главных»: первое выбранное качество весит 10, второе 8, третье 6, остальные — 3 (защищённый корпус — 0)
+const PRIO_LABEL = {imp_camera: "Камера", imp_active: "Долго без розетки", imp_standby: "Долго в ожидании",
+  imp_perf: "Мощность", imp_compact: "Компактный и лёгкий", imp_charge: "Быстрая зарядка", imp_storage: "Много памяти",
+  imp_new: "Свежая модель", imp_value: "Выгодная цена", imp_rugged: "Защищённый корпус"};
+const PRIO_W = [10, 8, 6], PRIO_BASE = 3, PRIO_MAX = 3;
+let prio = [];
 const CLASSES = ["Бюджетный", "Средний", "Флагман"];
 const CHEV = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
 const LEFT = CHEV("M15 5l-7 7 7 7"), RIGHT = CHEV("M9 5l7 7-7 7");
+const PHOTO_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 15.5l-5-4.5-8.5 8"/></svg>`;
 
 let META = null, PHOTOS = {}, state = {}, activePreset = null, activeSeg = 0, segSig = "", activeCol = "top";
 let lastData = null, lastRtt = 0, benchResult = null;
@@ -397,12 +419,11 @@ function buildForm() {
     pre.append(b);
   }
   for (const s of META.ui.importance) {
-    const wrap = document.createElement("div");
-    wrap.className = "slider";
-    wrap.innerHTML = `<div class="row"><label for="${s.key}">${esc(s.title)}</label><output id="${s.key}_out"></output></div>
-      <input type="range" id="${s.key}" min="0" max="10" step="1"><small>${esc(s.hint)}</small>`;
-    $(MAIN.includes(s.key) ? "#sliders-main" : "#sliders-more").append(wrap);
-    $("input", wrap).addEventListener("input", e => set(s.key, +e.target.value));
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "pchip"; b.dataset.key = s.key; b.title = s.hint;
+    b.innerHTML = `<span class="pnum" aria-hidden="true"></span>${esc(PRIO_LABEL[s.key] || s.title)}`;
+    b.onclick = () => togglePrio(s.key);
+    $("#prio").append(b);
   }
   document.querySelectorAll(".seg").forEach(seg => {
     for (const [v, label] of JSON.parse(seg.dataset.options)) {
@@ -434,11 +455,29 @@ function buildForm() {
       el.value = rub(state[id]);
     });
   }
-  $("#reset").onclick = () => { state = defaults(); activePreset = null; syncForm(); request(); };
+  $("#reset").onclick = () => { state = defaults(); prioFromValues(); activePreset = null; syncForm(); request(); };
+}
+
+function togglePrio(key) {
+  const i = prio.indexOf(key);
+  if (i >= 0) prio.splice(i, 1);
+  else if (prio.length < PRIO_MAX) prio.push(key);
+  else return; // уже три — сначала снимите одно
+  for (const s of META.ui.importance) state[s.key] = s.key === "imp_rugged" ? 0 : PRIO_BASE;
+  prio.forEach((k, n) => { state[k] = PRIO_W[n]; });
+  activePreset = null;
+  syncForm(); request();
+}
+
+// для пресетов и значений по умолчанию: три самых весомых качества (от 5 баллов) показываем выбранными
+function prioFromValues() {
+  prio = META.ui.importance.map(s => s.key).filter(k => state[k] >= 5)
+    .sort((a, b) => state[b] - state[a]).slice(0, PRIO_MAX);
 }
 
 function applyPreset(p) {
   state = {...defaults(), ...p.values, budget_rub: state.budget_rub, budget_min: state.budget_min};
+  prioFromValues();
   activePreset = p.name;
   syncForm(); request();
 }
@@ -450,10 +489,17 @@ function set(key, value, opts = {}) {
 }
 
 function syncForm(opts = {}) {
-  for (const s of META.ui.importance) {
-    $("#" + s.key).value = state[s.key];
-    $("#" + s.key + "_out").textContent = state[s.key];
-  }
+  const full = prio.length >= PRIO_MAX;
+  document.querySelectorAll(".pchip").forEach(b => {
+    const n = prio.indexOf(b.dataset.key);
+    b.setAttribute("aria-pressed", String(n >= 0));
+    b.querySelector(".pnum").textContent = n >= 0 ? n + 1 : "";
+    b.classList.toggle("locked", full && n < 0);
+    b.setAttribute("aria-label", (PRIO_LABEL[b.dataset.key] || "") + (n >= 0 ? `, выбрано ${n + 1}-м` : ""));
+  });
+  $("#prio-hint").textContent = !prio.length ? "Выберите до трёх качеств. Первое выбранное считается самым важным."
+    : !full ? `Можно добавить ещё ${PRIO_MAX - prio.length === 1 ? "одно" : "два"}. Нажмите ещё раз, чтобы снять.`
+    : "Выбрано три. Чтобы выбрать другое, снимите одно из них.";
   document.querySelectorAll(".seg").forEach(seg => seg.querySelectorAll("button").forEach(b =>
     b.setAttribute("aria-pressed", String(+b.dataset.value === +state[seg.dataset.key]))));
   document.querySelectorAll("[data-flag]").forEach(b => b.setAttribute("aria-pressed", String(!!state[b.dataset.flag])));
@@ -462,7 +508,7 @@ function syncForm(opts = {}) {
   if (!opts.keepSlider) $("#budget_slider").value = rubToSlider(state.budget_rub);
   document.querySelectorAll("#presets .chip").forEach(b => b.setAttribute("aria-pressed", String(b.textContent === activePreset)));
   const p = META.ui.presets.find(x => x.name === activePreset);
-  $("#preset-hint").textContent = p ? p.hint : "Выберите готовый профиль или настройте ползунки сами.";
+  $("#preset-hint").textContent = p ? p.hint : "Выберите готовый профиль или отметьте главное ниже.";
 }
 
 // ---------- запрос: дребезг 40 мс, старый запрос отменяется ----------
@@ -510,7 +556,7 @@ function badges(r) {
 function gallery(r, rank, best) {
   const list = PHOTOS[r.id] || [];
   const rankHtml = `<span class="rank" title="${best ? "Лучший выбор" : "Место в подборке"}">${best ? "Лучший выбор" : rank}</span>`;
-  if (!list.length) return `<div class="gallery empty">${rankHtml}<span>Свободного фото этой модели пока нет</span></div>`;
+  if (!list.length) return `<div class="gallery empty">${rankHtml}<div class="slot">${PHOTO_ICON}<b>Место для фото</b><small>файл photos/${r.id}.jpg</small></div></div>`;
   const i = Math.min(photoIdx[r.id] || 0, list.length - 1);
   const ph = list[i];
   const credit = ph.local ? "" : `<a class="credit" href="${esc(ph.page)}" target="_blank" rel="noopener">Фото: ${esc(ph.artist || "Wikimedia Commons")}, ${esc(ph.license || "свободная лицензия")}</a>`;
@@ -736,7 +782,7 @@ function renderError(e) {
   const withPhoto = Object.keys(PHOTOS).length;
   $("#lead").textContent = `${META.phones} моделей, ${META.groups.length} групп. Отвечайте на вопросы — подборка обновляется сразу.`;
   $("#foot").textContent = `Модель обучена ${META.trained_at.replace("T", " ")} на ${nf.format(m.surveys)} анкетах. Цены — из Telegram-каналов и маркетплейсов, автономность расчётная. Фото: Wikimedia Commons под свободными лицензиями (авторы указаны на фото), есть у ${withPhoto} моделей из ${META.phones}.`;
-  state = defaults();
+  state = defaults(); prioFromValues();
   buildForm(); syncForm(); request();
 })();
 </script>
