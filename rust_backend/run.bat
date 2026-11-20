@@ -21,6 +21,9 @@ if errorlevel 1 (
   exit /b 1
 )
 
+rem старый сервер держит порт 8080 и отдаёт старую страницу — останавливаем его
+taskkill /IM phonepicker-server.exe /F >nul 2>nul
+timeout /t 1 /nobreak >nul
 start "PhonePicker server" target\release\phonepicker-server.exe
 timeout /t 2 /nobreak >nul
 start "" http://localhost:8080
