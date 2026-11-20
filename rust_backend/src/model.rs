@@ -68,6 +68,9 @@ struct RawModel {
     ui: serde_json::Value,
     #[serde(default)]
     python_bench_ms: Option<f64>,
+    /// ссылки на фото из таблицы phone_photos: {"id": [{src, artist, license, page}]}
+    #[serde(default)]
+    photos: serde_json::Map<String, serde_json::Value>,
 }
 
 /// Один полносвязный слой: y = W·x + b, W хранится построчно (in × out), как `coefs_` в sklearn.
@@ -172,6 +175,7 @@ pub struct Model {
     pub metrics: serde_json::Value,
     pub ui: serde_json::Value,
     pub python_bench_ms: Option<f64>,
+    pub photos: serde_json::Map<String, serde_json::Value>,
 }
 
 pub const SURVEY_FIELDS: [&str; 21] = [
@@ -281,6 +285,7 @@ impl Model {
             metrics: raw.metrics,
             ui: raw.ui,
             python_bench_ms: raw.python_bench_ms,
+            photos: raw.photos,
         })
     }
 }

@@ -5,7 +5,7 @@ from pathlib import Path
 
 # откуда брать базу и модели: build/bundle от build_exe.py, иначе — рабочие файлы проекта
 BUNDLE = Path(os.environ.get("PHONEPICKER_BUNDLE", "."))
-BUNDLE_FILES = ["data/phones_seed.csv", "data/price_history_seed.csv", "data/benchmarks/wine.data",
+BUNDLE_FILES = ["data/phones_seed.csv", "data/price_history_seed.csv", "data/phone_photos_seed.csv", "data/benchmarks/wine.data",
                 "data/phones.db", "models/pipeline.joblib", "models/price_model.joblib",
                 "models/experiments.joblib", ".env.example"]
 

@@ -1,4 +1,4 @@
-"""SQLite-база: телефоны, анкеты опроса, отзывы пользователя и история цен."""
+"""SQLite-база: телефоны, их фотографии, анкеты опроса, отзывы пользователя и история цен."""
 import hashlib
 import json
 import sqlite3
@@ -15,6 +15,7 @@ from src.preprocess import drop_invalid, handle_missing
 DB_PATH = DATA_DIR / "phones.db"
 SEED_PATH = DATA_DIR / "phones_seed.csv"
 HISTORY_SEED_PATH = DATA_DIR / "price_history_seed.csv"
+PHOTOS_SEED_PATH = DATA_DIR / "phone_photos_seed.csv"
 
 NUMERIC_COLS = ["year", "price_rub", "ram_gb", "rom_gb", "battery_mah", "screen_in",
                 "refresh_hz", "weight_g", "camera_mp", "antutu_k", "charge_w",
@@ -44,6 +45,15 @@ CREATE TABLE IF NOT EXISTS price_history (
     phone_id INTEGER, price_rub REAL, source TEXT, created TEXT
 );
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
+-- ссылки на фотографии телефона: url — сам снимок; author/license — атрибуция (для свободных лицензий обязательна);
+-- source_page — страница файла; origin: seed — из data/phone_photos_seed.csv, user — добавлено вручную
+CREATE TABLE IF NOT EXISTS phone_photos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    phone_id INTEGER NOT NULL, url TEXT NOT NULL, author TEXT, license TEXT, source_page TEXT,
+    position INTEGER DEFAULT 0, origin TEXT DEFAULT 'user',
+    UNIQUE(phone_id, url)
+);
+CREATE INDEX IF NOT EXISTS idx_photos_phone ON phone_photos(phone_id, position);
 -- индексы под частые запросы: фильтры каталога, история цен телефона, отзывы по анкете
 CREATE INDEX IF NOT EXISTS idx_phones_price ON phones(price_rub);
 CREATE INDEX IF NOT EXISTS idx_phones_brand ON phones(brand);
@@ -118,8 +128,9 @@ def upsert_phones(df: pd.DataFrame, source: str = "seed") -> int:
 
 def _seed_hash() -> str:
     h = hashlib.md5(SEED_PATH.read_bytes())
-    if HISTORY_SEED_PATH.exists():
-        h.update(HISTORY_SEED_PATH.read_bytes())
+    for extra in (HISTORY_SEED_PATH, PHOTOS_SEED_PATH):
+        if extra.exists():
+            h.update(extra.read_bytes())
     return h.hexdigest()
 
 
@@ -134,6 +145,38 @@ def _load_history_seed(conn) -> int:
     conn.execute("DELETE FROM price_history WHERE source LIKE 'telegram:%' OR source LIKE 'оценка%'")
     conn.executemany("INSERT INTO price_history (phone_id, price_rub, source, created) VALUES (?,?,?,?)", rows)
     return len(rows)
+
+
+def _load_photo_seed(conn) -> int:
+    """Ссылки на фото из data/phone_photos_seed.csv → таблица phone_photos (свои ссылки пользователя не трогаем)."""
+    if not PHOTOS_SEED_PATH.exists():
+        return 0
+    seed = pd.read_csv(PHOTOS_SEED_PATH, dtype=str).fillna("")
+    ids = dict(conn.execute("SELECT model, id FROM phones").fetchall())
+    rows = [(ids[r.model], r.url, r.author, r.license, r.source_page, int(r.position or 0))
+            for r in seed.itertuples(index=False) if r.model in ids and r.url]
+    conn.execute("DELETE FROM phone_photos WHERE origin='seed'")
+    conn.executemany("INSERT OR IGNORE INTO phone_photos (phone_id, url, author, license, source_page, position, origin) "
+                     "VALUES (?,?,?,?,?,?,'seed')", rows)
+    return len(rows)
+
+
+def get_photos(phone_id: int | None = None) -> pd.DataFrame:
+    """Фото телефонов по порядку показа; phone_id=None — все."""
+    where, args = ("WHERE phone_id=?", (phone_id,)) if phone_id is not None else ("", ())
+    with connect() as conn:
+        return pd.read_sql_query(f"SELECT * FROM phone_photos {where} ORDER BY phone_id, position, id", conn, params=args)
+
+
+def add_photo(phone_id: int, url: str, author: str = "", license: str = "", source_page: str = "") -> None:
+    """Добавить свою ссылку на фото телефона (в конец списка его фото)."""
+    if not url.startswith(("http://", "https://", "/")):
+        raise ValueError("Ссылка на фото должна начинаться с http://, https:// или / (файл в папке photos).")
+    with connect() as conn:
+        pos = conn.execute("SELECT COALESCE(MAX(position), -1) + 1 FROM phone_photos WHERE phone_id=?",
+                           (phone_id,)).fetchone()[0]
+        conn.execute("INSERT OR IGNORE INTO phone_photos (phone_id, url, author, license, source_page, position, origin) "
+                     "VALUES (?,?,?,?,?,?,'user')", (phone_id, url, author, license, source_page, pos))
 
 
 def init_db() -> None:
@@ -159,6 +202,7 @@ def init_db() -> None:
     upsert_phones(seed, "seed")
     with connect() as conn:
         _load_history_seed(conn)
+        _load_photo_seed(conn)
         conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('seed_hash', ?)", (_seed_hash(),))
         conn.execute("ANALYZE")  # обновить статистику для планировщика запросов
 

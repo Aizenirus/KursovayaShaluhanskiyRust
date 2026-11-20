@@ -40,6 +40,29 @@ def _f(x) -> list:
     return np.asarray(x, dtype=float).round(10).tolist()
 
 
+def photos_by_id(ids: set[int]) -> dict:
+    """Ссылки на фото из таблицы phone_photos: {id: [{src, artist, license, page}]} — в порядке показа."""
+    out: dict[str, list] = {}
+    for r in db.get_photos().itertuples(index=False):
+        if int(r.phone_id) in ids:
+            out.setdefault(str(int(r.phone_id)), []).append(
+                {"src": r.url, "artist": r.author or "", "license": r.license or "", "page": r.source_page or ""})
+    return out
+
+
+def write_photos_todo(pipe: PhonePipeline, photos: dict) -> Path:
+    """Таблица для ручного заполнения: каким моделям ещё нужны фото (и имя файла для папки photos/)."""
+    import csv
+    path = OUT.parent / "photos_todo.csv"
+    rows = sorted(pipe.phones_.itertuples(index=False), key=lambda p: (str(p.brand).lower(), str(p.model)))
+    with path.open("w", newline="", encoding="utf-8-sig") as f:
+        w = csv.writer(f, delimiter=";")
+        w.writerow(["id", "модель", "фото в базе", "имя файла для своего фото"])
+        for p in rows:
+            w.writerow([p.id, full_name(p.brand, p.model), len(photos.get(str(p.id), [])), f"{p.id}.jpg"])
+    return path
+
+
 def export(pipe: PhonePipeline, fair: dict | None) -> dict:
     phones = pipe.phones_
     plist = []
@@ -64,6 +87,7 @@ def export(pipe: PhonePipeline, fair: dict | None) -> dict:
         "cluster_names": [pipe.cluster_names_[c] for c in range(pipe.k_)],
         "class_names": [CLASS_NAMES[c] for c in range(3)],
         "fair": {str(k): float(v) for k, v in (fair or {}).items()},
+        "photos": photos_by_id({int(i) for i in phones["id"]}),
         "mlp": {
             "scaler_mean": _f(sc.mean_), "scaler_scale": _f(sc.scale_),
             "coefs": [_f(w) for w in mlp.coefs_], "intercepts": [_f(b) for b in mlp.intercepts_],
@@ -135,6 +159,8 @@ def main():
     data["python_bench_ms"] = round(float(np.median(times)), 3)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    todo = write_photos_todo(pipe, data["photos"])
+    print(f"фото в базе: у {len(data['photos'])} моделей из {len(pipe.phones_)}; список без фото — {todo.name}")
     print(f"{OUT}  ({OUT.stat().st_size / 1024:.0f} КБ, телефонов: {len(pipe.phones_)}, групп: {pipe.k_})")
     if args.golden:
         GOLDEN.write_text(json.dumps(golden(pipe, fair, args.golden), ensure_ascii=False), encoding="utf-8")

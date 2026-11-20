@@ -42,7 +42,7 @@ def ensure_runtime_files() -> None:
     """Первый запуск exe: скопировать встроенные БД, датасет и обученные модели."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    seeds = ("phones_seed.csv", "price_history_seed.csv")  # датасеты только читаются — всегда свежие
+    seeds = ("phones_seed.csv", "price_history_seed.csv", "phone_photos_seed.csv")  # датасеты только читаются — всегда свежие
     if not FROZEN:
         if DATA_DIR != SOURCE_ROOT / "data":
             for name in seeds:

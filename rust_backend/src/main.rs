@@ -4,7 +4,7 @@
 //!   GET  /api/meta        — справочник для интерфейса: ползунки, пресеты, метрики модели
 //!   POST /api/recommend   — подбор по анкете (JSON) → выдача, блоки, сегменты, время расчёта
 //!   GET  /api/bench?n=…   — замер скорости на n случайных анкетах
-//!   GET  /api/photos      — фото телефонов: Wikimedia Commons (photos.json) + своя папка photos/
+//!   GET  /api/photos      — фото телефонов: своя папка photos/ + ссылки из БД (таблица phone_photos → model.json)
 //!   GET  /photos/…        — файлы из папки photos/ (например photos/57.jpg, photos/57-2.webp)
 //!   GET  /fonts/…         — шрифты страницы (встроены в бинарник)
 //!
@@ -25,7 +25,6 @@ use tower_http::{compression::CompressionLayer, cors::CorsLayer};
 
 const INDEX_HTML: &str = include_str!("../static/index.html");
 const EMBEDDED_MODEL: &str = include_str!("../model.json");
-const COMMONS_PHOTOS: &str = include_str!("../photos.json");
 
 /// Шрифты Unbounded и Onest (SIL OFL) встроены в бинарник: страница выглядит одинаково и без интернета.
 macro_rules! fonts {
@@ -152,9 +151,9 @@ fn local_photo_id(name: &str) -> Option<i64> {
     stem.split('-').next()?.parse().ok()
 }
 
-/// Свои фото из папки идут первыми, затем — фото из Wikimedia Commons с атрибуцией.
+/// Свои фото из папки идут первыми, затем — ссылки из базы (с автором и лицензией).
 /// Папка перечитывается при каждом запросе: новые файлы видны без перезапуска сервера.
-async fn photos() -> impl IntoResponse {
+async fn photos(State(m): State<Arc<Model>>) -> impl IntoResponse {
     let mut map: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
     if let Ok(entries) = std::fs::read_dir(photos_dir()) {
         let mut files: Vec<String> = entries.flatten().filter_map(|e| e.file_name().into_string().ok()).collect();
@@ -166,12 +165,10 @@ async fn photos() -> impl IntoResponse {
             }
         }
     }
-    if let Ok(serde_json::Value::Object(commons)) = serde_json::from_str::<serde_json::Value>(COMMONS_PHOTOS) {
-        for (id, v) in commons {
-            if let (Ok(_), serde_json::Value::Array(items)) = (id.parse::<i64>(), v) {
-                let list = map.entry(id).or_insert_with(|| serde_json::json!([]));
-                list.as_array_mut().unwrap().extend(items);
-            }
+    for (id, v) in &m.photos {
+        if let serde_json::Value::Array(items) = v {
+            let list = map.entry(id.clone()).or_insert_with(|| serde_json::json!([]));
+            list.as_array_mut().unwrap().extend(items.iter().cloned());
         }
     }
     ([(header::CACHE_CONTROL, "no-cache")], Json(serde_json::Value::Object(map)))
